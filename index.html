@@ -116,53 +116,46 @@ function encodePlantUML(text) {
 
 async function processText() {
     const text = document.getElementById("process-text").value.trim();
+    const status = document.getElementById("status");
+    const diagram = document.getElementById("diagram");
 
     if (!text) {
-        showError("Введите описание процесса");
+        status.textContent = "Введите текст";
+        status.className = "status error";
         return;
     }
 
-    hideAllResults();
-    hideError();
-    showStatus("Анализируем процесс...", "loading");
+    status.textContent = "Processing...";
+    status.className = "status";
+    diagram.style.display = "none";
 
     try {
-        const response = await fetch(BACKEND_URL, {
+        const response = await fetch("https://uml-backend.onrender.com/analyze", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ text })
         });
 
         if (!response.ok) {
-            throw new Error("Ошибка backend");
+            throw new Error("Backend error");
         }
 
         const data = await response.json();
 
-        /* 1️⃣ UML */
-        showPlantUML(data.plantuml);
+        const encoded = encodePlantUML(data.plantuml);
+        const imgUrl = `https://www.plantuml.com/plantuml/svg/${encoded}`;
 
-        /* 2️⃣ Entity Highlighting (пока простой) */
-        const entityBox = document.getElementById("highlighted-text");
-        entityBox.innerHTML = data.entities.length
-            ? data.entities.map(e => `<span class="entity">${e}</span>`).join(" ")
-            : "<i>Сущности не найдены</i>";
-
-        document.getElementById("result-highlighting").style.display = "block";
-
-        showStatus("Готово ✅", "success");
-
-        setTimeout(() => {
-            document
-                .querySelector(".results-section")
-                .scrollIntoView({ behavior: "smooth" });
-        }, 300);
+        document.getElementById("uml-image").src = imgUrl;
+        diagram.style.display = "block";
+        status.textContent = "Done ✅";
 
     } catch (err) {
-        showError("Ошибка соединения: " + err.message);
+        status.textContent = "Error: " + err.message;
+        status.className = "status error";
     }
 }
 </script>
+
 
 
 
