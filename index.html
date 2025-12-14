@@ -116,12 +116,15 @@ function encodePlantUML(text) {
 
 async function processText() {
     const text = document.getElementById("process-text").value.trim();
-    const status = document.getElementById("status");
-    const diagram = document.getElementById("diagram");
 
-    status.textContent = "Processing...";
-    status.className = "status";
-    diagram.style.display = "none";
+    if (!text) {
+        showError("Введите описание процесса");
+        return;
+    }
+
+    hideAllResults();
+    hideError();
+    showStatus("Анализируем процесс...", "loading");
 
     try {
         const response = await fetch(BACKEND_URL, {
@@ -131,25 +134,37 @@ async function processText() {
         });
 
         if (!response.ok) {
-            throw new Error("Backend error");
+            throw new Error("Ошибка backend");
         }
 
         const data = await response.json();
 
-        const encoded = encodePlantUML(data.plantuml);
-        const imgUrl = `https://www.plantuml.com/plantuml/svg/${encoded}`;
+        /* 1️⃣ UML */
+        showPlantUML(data.plantuml);
 
-        document.getElementById("uml-image").src = imgUrl;
-        diagram.style.display = "block";
+        /* 2️⃣ Entity Highlighting (пока простой) */
+        const entityBox = document.getElementById("highlighted-text");
+        entityBox.innerHTML = data.entities.length
+            ? data.entities.map(e => `<span class="entity">${e}</span>`).join(" ")
+            : "<i>Сущности не найдены</i>";
 
-        status.textContent = "Done ✅";
+        document.getElementById("result-highlighting").style.display = "block";
+
+        showStatus("Готово ✅", "success");
+
+        setTimeout(() => {
+            document
+                .querySelector(".results-section")
+                .scrollIntoView({ behavior: "smooth" });
+        }, 300);
 
     } catch (err) {
-        status.textContent = "Error: " + err.message;
-        status.className = "status error";
+        showError("Ошибка соединения: " + err.message);
     }
 }
 </script>
+
+
 
 </body>
 </html>
