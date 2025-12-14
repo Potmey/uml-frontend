@@ -1,0 +1,46 @@
+<script>
+async function processText() {
+    const text = document.getElementById("process-text").value.trim();
+    if (!text) {
+        showError("Введите текст процесса");
+        return;
+    }
+
+    hideAllResults();
+    hideError();
+    showStatus("Анализируем процесс...", "loading");
+
+    try {
+        const response = await fetch(
+            "https://uml-backend.onrender.com/analyze",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ text })
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error("Ошибка backend");
+        }
+
+        const data = await response.json();
+
+        // 1️⃣ PlantUML
+        showPlantUML(data.plantuml);
+
+        // 2️⃣ Подсветка сущностей (пока простая)
+        document.getElementById("highlighted-text").innerText =
+            data.entities.join(", ") || "Нет сущностей";
+
+        document.getElementById("result-highlighting").style.display = "block";
+
+        showStatus("Готово ✅", "success");
+
+    } catch (err) {
+        showError("Ошибка соединения с backend: " + err.message);
+    }
+}
+</script>
